@@ -1,10 +1,23 @@
 [package]
 name = "kp2vcard"
+authors = ["louib <code@louib.net>"]
+
 version = "0.1.0"
 edition = "2021"
+# rust-version = "1.60"
+
+repository = "https://github.com/louib/kp2vcard/"
+description = "CLI tool to translate from kdbx to vcard, and vice versa."
+
+keywords = [
+  "keepass",
+  "vcard",
+  "cli",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
 ical = "0.7"
+
+keepass = "0.4"
