@@ -18,6 +18,7 @@ keywords = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ical = "0.7"
+clap = { version = "3", features = ["derive"] }
 
+ical = "0.7"
 keepass = "0.4"
