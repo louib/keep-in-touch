@@ -1,3 +1,6 @@
+use std::fs::File;
+
+use keepass::{Database, Node, Entry};
 use clap::{AppSettings, Parser, Subcommand};
 
 enum SupportedFormat {
@@ -6,10 +9,10 @@ enum SupportedFormat {
 }
 impl SupportedFormat {
     pub fn from_string(format: &str) -> Option<SupportedFormat> {
-        if (format == "kdbx") {
+        if format.to_lowercase() == "kdbx" {
             return Some(SupportedFormat::KDBX);
         }
-        if (format == "vcard") {
+        if format.to_lowercase() == "vcard" {
             return Some(SupportedFormat::VCARD);
         }
         None
@@ -27,6 +30,9 @@ struct KP2VCard {
     /// The format to convert to. The extension of the path will be used
     /// to detect the format if a path is provided.
     format: Option<String>,
+    /// Disables the password prompt on stdout.
+    #[clap(long, short)]
+    no_prompt: bool,
 }
 
 fn main() -> std::process::ExitCode {
@@ -58,7 +64,27 @@ fn main() -> std::process::ExitCode {
     }
 
     match source_format {
-        SupportedFormat::KDBX => {}
+        SupportedFormat::KDBX => {
+            let password = "temp_password";
+
+            let db = match Database::open(&mut File::open(&file_path).unwrap(), Some(&password), None) {
+                Ok(db) => db,
+                Err(e) => {
+                    eprintln!("Could not open database at {}: {}.", file_path, e);
+                    return std::process::ExitCode::FAILURE;
+                }
+            };
+
+            println!("There are {} entries in this database.", db.root.children.len());
+
+            for entry in db.root.children {
+                let entry: Entry = match entry {
+                    Node::Entry(e) => e,
+                    Node::Group(_) => continue,
+                };
+                println!("Database entry {}.", entry.get_title().unwrap());
+            }
+        }
         SupportedFormat::VCARD => {}
     }
 
