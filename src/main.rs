@@ -1,7 +1,7 @@
 use std::fs::File;
 
-use keepass::{Database, Node, Entry};
 use clap::{AppSettings, Parser, Subcommand};
+use keepass::{Database, Entry, Node};
 
 enum SupportedFormat {
     KDBX,
@@ -67,15 +67,19 @@ fn main() -> std::process::ExitCode {
         SupportedFormat::KDBX => {
             let password = "temp_password";
 
-            let db = match Database::open(&mut File::open(&file_path).unwrap(), Some(&password), None) {
-                Ok(db) => db,
-                Err(e) => {
-                    eprintln!("Could not open database at {}: {}.", file_path, e);
-                    return std::process::ExitCode::FAILURE;
-                }
-            };
+            let db =
+                match Database::open(&mut File::open(&file_path).unwrap(), Some(&password), None) {
+                    Ok(db) => db,
+                    Err(e) => {
+                        eprintln!("Could not open database at {}: {}.", file_path, e);
+                        return std::process::ExitCode::FAILURE;
+                    }
+                };
 
-            println!("There are {} entries in this database.", db.root.children.len());
+            println!(
+                "There are {} entries in this database.",
+                db.root.children.len()
+            );
 
             for entry in db.root.children {
                 let entry: Entry = match entry {
