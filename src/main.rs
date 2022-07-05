@@ -41,26 +41,25 @@ fn main() -> std::process::ExitCode {
             None => {
                 eprintln!("Invalid format {}.", format);
                 return std::process::ExitCode::FAILURE;
-            },
+            }
         };
     } else {
         let file_extension = file_path.split(".").last().unwrap();
         source_format = match SupportedFormat::from_string(&file_extension) {
             Some(f) => f,
             None => {
-                eprintln!("Cannot detect file format from extension {}.", file_extension);
+                eprintln!(
+                    "Cannot detect file format from extension {}.",
+                    file_extension
+                );
                 return std::process::ExitCode::FAILURE;
-            },
+            }
         }
     }
 
     match source_format {
-        SupportedFormat::KDBX => {
-
-        },
-        SupportedFormat::VCARD => {
-
-        },
+        SupportedFormat::KDBX => {}
+        SupportedFormat::VCARD => {}
     }
 
     std::process::ExitCode::SUCCESS
