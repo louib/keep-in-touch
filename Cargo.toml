@@ -21,4 +21,5 @@ keywords = [
 clap = { version = "3", features = ["derive"] }
 
 ical = "0.7"
-keepass = "0.4"
+keepass = { git = "https://github.com/louib/keepass-rs", branch = "save_kp4" }
+# keepass = "0.4"
