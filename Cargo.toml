@@ -7,7 +7,7 @@ edition = "2021"
 # rust-version = "1.60"
 
 repository = "https://github.com/louib/keep-in-touch/"
-description = "CLI tool to translate from kdbx to vcard, and vice versa."
+description = "Contact manager based on the KDBX4 encrypted database format"
 
 keywords = [
   "keepass",

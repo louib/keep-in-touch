@@ -1,5 +1,5 @@
 {
-  description = "CLI tool to translate from kdbx to vcard, and vice versa";
+  description = "Contact manager based on the KDBX4 encrypted database format";
 
   inputs = {
     nixpkgs = {

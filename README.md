@@ -1,5 +1,5 @@
 # keep-in-touch
-CLI tool to translate from kdbx to vcard, and vice versa.
+Contact manager based on the KDBX4 encrypted database format.
 
 ## References
 * https://datatracker.ietf.org/doc/html/rfc6350
