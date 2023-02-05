@@ -32,6 +32,9 @@
           devShells = {
             default = pkgs.mkShell {
               buildInputs = cargoPackages;
+
+              # TODO add this variable to the shellHook
+              # RUSTFLAGS='-C target-cpu=native'
             };
           };
           packages = {
