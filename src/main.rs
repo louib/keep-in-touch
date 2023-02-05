@@ -21,7 +21,7 @@ impl SupportedFormat {
 
 /// CLI tool to translate from kdbx to vcard, and vice versa.
 #[derive(Parser)]
-#[clap(name = "kp2vcard")]
+#[clap(name = "keep-in-touch")]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
 #[clap(about = "CLI tool to translate from kdbx to vcard, and vice versa.", long_about = None)]
 struct KP2VCard {

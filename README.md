@@ -1,4 +1,4 @@
-# kp2vcard
+# keep-in-touch
 CLI tool to translate from kdbx to vcard, and vice versa.
 
 ## References

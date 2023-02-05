@@ -18,7 +18,7 @@
     flake-utils.lib.eachDefaultSystem (
       system: (
         let
-          projectName = "kp2vcard";
+          projectName = "keep-in-touch";
           pkgs = import nixpkgs {
             inherit system;
           };
@@ -35,7 +35,7 @@
             };
           };
           packages = {
-            kp2vcard = pkgs.rustPlatform.buildRustPackage rec {
+            keep-in-touch = pkgs.rustPlatform.buildRustPackage rec {
               pname = projectName;
               version = "main";
 

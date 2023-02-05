@@ -1,12 +1,12 @@
 [package]
-name = "kp2vcard"
+name = "keep-in-touch"
 authors = ["louib <code@louib.net>"]
 
 version = "0.1.0"
 edition = "2021"
 # rust-version = "1.60"
 
-repository = "https://github.com/louib/kp2vcard/"
+repository = "https://github.com/louib/keep-in-touch/"
 description = "CLI tool to translate from kdbx to vcard, and vice versa."
 
 keywords = [
@@ -21,5 +21,4 @@ keywords = [
 clap = { version = "3", features = ["derive"] }
 
 ical = "0.7"
-keepass = { git = "https://github.com/louib/keepass-rs", branch = "save_kp4" }
-# keepass = "0.4"
+keepass = { git = "https://github.com/sseemayer/keepass-rs", features = ["save_kdbx4"] }
