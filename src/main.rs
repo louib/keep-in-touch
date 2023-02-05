@@ -5,7 +5,7 @@ use std::io::Write;
 use anyhow::Result;
 
 use clap::{AppSettings, Parser, Subcommand};
-use keepass::{Database, Entry, Node};
+use keepass::{Database, Entry, Node, NodeRef};
 
 /// Contact manager based on the KDBX4 encrypted database format
 #[derive(Parser)]
@@ -35,8 +35,6 @@ fn main() -> Result<std::process::ExitCode> {
     //
     let mut db = Database::open(&mut database_data, Some(&password), None)?;
 
-    println!("Database was opened, {} entries.", db.root.children.len());
-
     let stdin = io::stdin();
     let stdout = io::stdout();
 
@@ -51,8 +49,13 @@ fn main() -> Result<std::process::ExitCode> {
         let choice: String = buffer.replace(&"\n", &"");
         let choice: &str = choice.trim().as_ref();
         match choice {
-            "ls" => {}
+            "ls" => {
+                display_all_entries(&db.root.children);
+            }
             "search" => {}
+            "add" => {}
+            "edit" => {}
+            "help" => {}
             "exit" => {
                 break;
             }
@@ -60,9 +63,21 @@ fn main() -> Result<std::process::ExitCode> {
                 println!("Invalid command {}", choice);
             }
         }
+        println!()
     }
 
     Ok(std::process::ExitCode::SUCCESS)
+}
+
+fn display_all_entries(nodes: &Vec<Node>) {
+    for node in nodes {
+        match node {
+            Node::Group(group) => {}
+            Node::Entry(entry) => {
+                println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+            }
+        }
+    }
 }
 
 fn display_menu() {
