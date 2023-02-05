@@ -42,22 +42,34 @@ fn main() -> Result<std::process::ExitCode> {
 
     while true {
         let mut buffer = String::new();
-        // TODO display menu
+
+        display_menu();
         print!("Enter your choice: ");
         io::stdout().flush();
         stdin.read_line(&mut buffer)?;
 
         let choice: String = buffer.replace(&"\n", &"");
         let choice: &str = choice.trim().as_ref();
-        println!("The choice has length {}.", choice.len());
         match choice {
-            "1" => {}
-            "2" => {
+            "ls" => {}
+            "search" => {}
+            "exit" => {
                 break;
             }
-            _ => {}
+            _ => {
+                println!("Invalid command {}", choice);
+            }
         }
     }
 
     Ok(std::process::ExitCode::SUCCESS)
+}
+
+fn display_menu() {
+    println!("ls - List all the contacts");
+    println!("search - Search for a contact");
+    println!("add - Add a new contact");
+    println!("edit - Edit a contact");
+    println!("help - Display the help for a command");
+    println!("exit - Exit the application");
 }
