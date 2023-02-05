@@ -1,4 +1,6 @@
 use std::fs::File;
+use std::io;
+use std::io::Write;
 
 use anyhow::Result;
 
@@ -34,6 +36,28 @@ fn main() -> Result<std::process::ExitCode> {
     let mut db = Database::open(&mut database_data, Some(&password), None)?;
 
     println!("Database was opened, {} entries.", db.root.children.len());
+
+    let stdin = io::stdin();
+    let stdout = io::stdout();
+
+    while true {
+        let mut buffer = String::new();
+        // TODO display menu
+        print!("Enter your choice: ");
+        io::stdout().flush();
+        stdin.read_line(&mut buffer)?;
+
+        let choice: String = buffer.replace(&"\n", &"");
+        let choice: &str = choice.trim().as_ref();
+        println!("The choice has length {}.", choice.len());
+        match choice {
+            "1" => {}
+            "2" => {
+                break;
+            }
+            _ => {}
+        }
+    }
 
     Ok(std::process::ExitCode::SUCCESS)
 }
