@@ -35,7 +35,7 @@ fn main() -> Result<std::process::ExitCode> {
 
     let database_path = args.path;
 
-    let mut database_data = File::open(database_path)?;
+    let mut database_file = File::open(database_path)?;
 
     let password = rpassword::prompt_password("Password (or blank for none): ")
         .expect("Could not read password from TTY");
@@ -43,7 +43,7 @@ fn main() -> Result<std::process::ExitCode> {
     // TODO support keyfile
     // TODO support yubikey
     //
-    let mut db = Database::open(&mut database_data, Some(&password), None)?;
+    let mut db = Database::open(&mut database_file, Some(&password), None)?;
     println!("Enter '?' to print the list of available commands.");
 
     let stdin = io::stdin();
@@ -99,13 +99,13 @@ fn main() -> Result<std::process::ExitCode> {
             "search" => {
                 let mut command = Command::new("")
                     .no_binary_name(true)
-                    .arg(arg!(<TERM> "term to search for"));
+                    .arg(arg!(<term> "term to search for"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
                 match parsing_result {
                     Ok(command_args) => {
                         search_entries(
                             &db.root.children,
-                            command_args.get_one::<String>("TERM").unwrap(),
+                            command_args.get_one::<String>("term").unwrap(),
                         );
                     }
                     Err(e) => {
@@ -113,7 +113,28 @@ fn main() -> Result<std::process::ExitCode> {
                     }
                 }
             }
-            "add" => {}
+            "add" => {
+                let mut command = Command::new("")
+                    .no_binary_name(true)
+                    .arg(arg!(<name> "name of the new contact"));
+                let parsing_result = command.clone().try_get_matches_from(command_args);
+                match parsing_result {
+                    Ok(command_args) => {
+                        let name = command_args.get_one::<String>("name").unwrap();
+                        let mut new_entry = Entry::new();
+                        new_entry.fields.insert(
+                            "Title".to_string(),
+                            // FIXME should new values be protected by default?
+                            keepass::Value::Unprotected(name.to_string()),
+                        );
+                        db.root.children.push(Node::Entry(new_entry));
+                        db.save(&mut database_file, Some(&password), None);
+                    }
+                    Err(e) => {
+                        e.print();
+                    }
+                }
+            }
             "edit" => {}
             "help" => {}
             "?" => {
