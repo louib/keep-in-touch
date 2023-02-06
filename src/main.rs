@@ -4,7 +4,7 @@ use std::io::Write;
 
 use anyhow::Result;
 
-use clap::{AppSettings, Parser, Subcommand};
+use clap::{arg, Command, Parser, Subcommand};
 use keepass::{Database, Entry, Node, NodeRef};
 
 /// Contact manager based on the KDBX4 encrypted database format
@@ -57,12 +57,30 @@ fn main() -> Result<std::process::ExitCode> {
 
         let args = shellwords::split(line)?;
 
+        if args.is_empty() {
+            continue;
+        }
+
         let command_name = &args[0];
         let command_args = &args[1..];
 
         match command_name.as_ref() {
             "ls" => {
-                display_all_entries(&db.root.children);
+                let mut command = Command::new("")
+                    .no_binary_name(true)
+                    .arg(arg!(t: -t --tag <TAG> "list entries with a specific tag"));
+                let parsing_result = command.clone().try_get_matches_from(command_args);
+                match parsing_result {
+                    Ok(command_args) => {
+                        display_entries(
+                            &db.root.children,
+                            command_args.get_one::<String>("t").cloned(),
+                        );
+                    }
+                    Err(e) => {
+                        e.print();
+                    }
+                }
             }
             "show" => {
                 if command_args.len() != 1 {
@@ -74,7 +92,23 @@ fn main() -> Result<std::process::ExitCode> {
                     println!("Could not find entry {}", entry_uuid);
                 }
             }
-            "search" => {}
+            "search" => {
+                let mut command = Command::new("")
+                    .no_binary_name(true)
+                    .arg(arg!(<TERM> "term to search for"));
+                let parsing_result = command.clone().try_get_matches_from(command_args);
+                match parsing_result {
+                    Ok(command_args) => {
+                        search_entries(
+                            &db.root.children,
+                            command_args.get_one::<String>("TERM").unwrap(),
+                        );
+                    }
+                    Err(e) => {
+                        e.print();
+                    }
+                }
+            }
             "add" => {}
             "edit" => {}
             "help" => {}
@@ -94,12 +128,35 @@ fn main() -> Result<std::process::ExitCode> {
     Ok(std::process::ExitCode::SUCCESS)
 }
 
-fn display_all_entries(nodes: &Vec<Node>) {
+fn search_entries(nodes: &Vec<Node>, search_term: &str) {
+    for node in nodes {
+        match node {
+            Node::Group(group) => {
+                search_entries(&group.children, search_term);
+            }
+            Node::Entry(entry) => {
+                if let Some(title) = entry.get_title() {
+                    if title.contains(search_term) {
+                        println!("{} {}", entry.get_uuid(), title);
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn display_entries(nodes: &Vec<Node>, tag_option: Option<String>) {
     for node in nodes {
         match node {
             Node::Group(group) => {}
             Node::Entry(entry) => {
-                println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+                if let Some(tag) = &tag_option {
+                    if entry.tags.contains(&tag) {
+                        println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+                    }
+                } else {
+                    println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+                }
             }
         }
     }
