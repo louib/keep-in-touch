@@ -7,6 +7,10 @@ use anyhow::Result;
 use clap::{arg, Command, Parser, Subcommand};
 use keepass::{Database, Entry, Node, NodeRef};
 
+pub const PHONE_NUMBER_TAG_NAME: &str = "PhoneNumber";
+pub const ADDRESS_TAG_NAME: &str = "PhoneNumber";
+pub const NOTES_TAG_NAME: &str = "Notes";
+
 /// Contact manager based on the KDBX4 encrypted database format
 #[derive(Parser)]
 #[clap(name = "keep-in-touch")]
@@ -173,7 +177,22 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
             }
             Node::Entry(entry) => {
                 if entry.get_uuid() == uuid {
-                    println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+                    println!("UUID: {}", entry.get_uuid());
+                    println!("Name: {}", entry.get_title().unwrap());
+                    if let Some(phone_number) = entry.get(PHONE_NUMBER_TAG_NAME) {
+                        println!("{}: {}", PHONE_NUMBER_TAG_NAME, phone_number);
+                    }
+                    if let Some(address) = entry.get(ADDRESS_TAG_NAME) {
+                        println!("{}: {}", ADDRESS_TAG_NAME, address);
+                    }
+                    if !entry.tags.is_empty() {
+                        println!("Tags: {}", entry.tags.join(","));
+                    }
+                    if let Some(notes) = entry.get(NOTES_TAG_NAME) {
+                        println!("--- {} ---", NOTES_TAG_NAME);
+                        println!("{}", notes);
+                        println!("----------");
+                    }
                     return true;
                 }
             }
