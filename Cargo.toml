@@ -22,6 +22,6 @@ clap = { version = "4", features = ["derive"] }
 anyhow = { version = "1" }
 shellwords = "1.1.0"
 
-ical = "0.7"
+ical = "0.8"
 rpassword = { version = "7" }
 keepass = { git = "https://github.com/sseemayer/keepass-rs", features = ["save_kdbx4"] }
