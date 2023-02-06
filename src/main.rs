@@ -20,6 +20,12 @@ struct KeepInTouch {
     no_prompt: bool,
 }
 
+#[derive(Parser, Default)]
+struct Show {
+    /// The UUID of the entry to show
+    uuid: String,
+}
+
 fn main() -> Result<std::process::ExitCode> {
     let args = KeepInTouch::parse();
 
@@ -34,6 +40,7 @@ fn main() -> Result<std::process::ExitCode> {
     // TODO support yubikey
     //
     let mut db = Database::open(&mut database_data, Some(&password), None)?;
+    println!("Enter '?' to print the list of available commands.");
 
     let stdin = io::stdin();
     let stdout = io::stdout();
@@ -41,29 +48,47 @@ fn main() -> Result<std::process::ExitCode> {
     while true {
         let mut buffer = String::new();
 
-        display_menu();
-        print!("Enter your choice: ");
+        print!("> ");
         io::stdout().flush();
         stdin.read_line(&mut buffer)?;
 
-        let choice: String = buffer.replace(&"\n", &"");
-        let choice: &str = choice.trim().as_ref();
-        match choice {
+        let line: String = buffer.replace(&"\n", &"");
+        let line: &str = line.trim().as_ref();
+
+        let args = shellwords::split(line)?;
+
+        let command_name = &args[0];
+        let command_args = &args[1..];
+
+        match command_name.as_ref() {
             "ls" => {
                 display_all_entries(&db.root.children);
+            }
+            "show" => {
+                if command_args.len() != 1 {
+                    println!("Invalid number of arguments.")
+                }
+                let entry_uuid = command_args[0].clone();
+                let found = show_entry(&db.root.children, &entry_uuid);
+                if !found {
+                    println!("Could not find entry {}", entry_uuid);
+                }
             }
             "search" => {}
             "add" => {}
             "edit" => {}
             "help" => {}
+            "?" => {
+                print_available_commands();
+            }
             "exit" => {
                 break;
             }
             _ => {
-                println!("Invalid command {}", choice);
+                println!("Invalid command {}", command_name);
             }
         }
-        println!()
+        println!();
     }
 
     Ok(std::process::ExitCode::SUCCESS)
@@ -80,11 +105,33 @@ fn display_all_entries(nodes: &Vec<Node>) {
     }
 }
 
-fn display_menu() {
+fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
+    for node in nodes {
+        match node {
+            Node::Group(group) => {
+                let found = show_entry(&group.children, uuid);
+                if found {
+                    return true;
+                }
+            }
+            Node::Entry(entry) => {
+                if entry.get_uuid() == uuid {
+                    println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+fn print_available_commands() {
     println!("ls - List all the contacts");
     println!("search - Search for a contact");
     println!("add - Add a new contact");
+    println!("show - Show a contact's information");
     println!("edit - Edit a contact");
     println!("help - Display the help for a command");
+    println!("? - Print the list of available commands");
     println!("exit - Exit the application");
 }

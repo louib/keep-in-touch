@@ -20,6 +20,7 @@ keywords = [
 [dependencies]
 clap = { version = "3", features = ["derive"] }
 anyhow = { version = "1" }
+shellwords = "1.1.0"
 
 ical = "0.7"
 rpassword = { version = "7" }
