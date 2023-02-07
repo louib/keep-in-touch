@@ -33,8 +33,9 @@
             default = pkgs.mkShell {
               buildInputs = cargoPackages;
 
-              # TODO add this variable to the shellHook
-              # RUSTFLAGS='-C target-cpu=native'
+              shellHook = ''
+                export RUSTFLAGS='-C target-cpu=native'
+              '';
             };
           };
           packages = {
@@ -51,8 +52,8 @@
               meta = with pkgs.lib; {
                 description = "CLI tool to translate from kdbx to vcard, and vice versa";
                 homepage = "https://github.com/louib/${projectName}";
-                # license = licenses.unlicense;
-                # maintainers = [maintainers.tailhook];
+                license = licenses.GPLv3;
+                # maintainers = [];
               };
             };
           };
