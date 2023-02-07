@@ -52,7 +52,7 @@
               meta = with pkgs.lib; {
                 description = "CLI tool to translate from kdbx to vcard, and vice versa";
                 homepage = "https://github.com/louib/${projectName}";
-                license = licenses.GPLv3;
+                license = licenses.gpl3;
                 # maintainers = [];
               };
             };
