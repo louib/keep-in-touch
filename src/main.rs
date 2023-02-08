@@ -4,8 +4,11 @@ use std::io::Write;
 
 use anyhow::Result;
 
-use clap::{arg, Command, Parser, Subcommand};
-use keepass::{Database, Entry, Node, NodeRef};
+use clap::{arg, Command, Parser};
+use keepass::{
+    db::{Entry, Node, Value},
+    Database, DatabaseKey,
+};
 
 pub const PHONE_NUMBER_TAG_NAME: &str = "PhoneNumber";
 pub const ADDRESS_TAG_NAME: &str = "PhoneNumber";
@@ -43,17 +46,16 @@ fn main() -> Result<std::process::ExitCode> {
     // TODO support keyfile
     // TODO support yubikey
     //
-    let mut db = Database::open(&mut database_file, Some(&password), None)?;
+    let mut db = Database::open(&mut database_file, DatabaseKey::with_password(&password))?;
     println!("Enter '?' to print the list of available commands.");
 
     let stdin = io::stdin();
-    let stdout = io::stdout();
 
-    while true {
+    loop {
         let mut buffer = String::new();
 
         print!("> ");
-        io::stdout().flush();
+        io::stdout().flush()?;
         stdin.read_line(&mut buffer)?;
 
         let line: String = buffer.replace(&"\n", &"");
@@ -70,7 +72,7 @@ fn main() -> Result<std::process::ExitCode> {
 
         match command_name.as_ref() {
             "ls" => {
-                let mut command = Command::new("")
+                let command = Command::new("")
                     .no_binary_name(true)
                     .arg(arg!(t: -t --tag <TAG> "list entries with a specific tag"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
@@ -82,7 +84,7 @@ fn main() -> Result<std::process::ExitCode> {
                         );
                     }
                     Err(e) => {
-                        e.print();
+                        e.print()?;
                     }
                 }
             }
@@ -97,7 +99,7 @@ fn main() -> Result<std::process::ExitCode> {
                 }
             }
             "search" => {
-                let mut command = Command::new("")
+                let command = Command::new("")
                     .no_binary_name(true)
                     .arg(arg!(<term> "term to search for"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
@@ -109,12 +111,12 @@ fn main() -> Result<std::process::ExitCode> {
                         );
                     }
                     Err(e) => {
-                        e.print();
+                        e.print()?;
                     }
                 }
             }
             "add" => {
-                let mut command = Command::new("")
+                let command = Command::new("")
                     .no_binary_name(true)
                     .arg(arg!(<name> "name of the new contact"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
@@ -125,13 +127,13 @@ fn main() -> Result<std::process::ExitCode> {
                         new_entry.fields.insert(
                             "Title".to_string(),
                             // FIXME should new values be protected by default?
-                            keepass::Value::Unprotected(name.to_string()),
+                            Value::Unprotected(name.to_string()),
                         );
                         db.root.children.push(Node::Entry(new_entry));
-                        db.save(&mut database_file, Some(&password), None);
+                        db.save(&mut database_file, DatabaseKey::with_password(&password))?;
                     }
                     Err(e) => {
-                        e.print();
+                        e.print()?;
                     }
                 }
             }
@@ -173,7 +175,7 @@ fn search_entries(nodes: &Vec<Node>, search_term: &str) {
 fn display_entries(nodes: &Vec<Node>, tag_option: Option<String>) {
     for node in nodes {
         match node {
-            Node::Group(group) => {}
+            Node::Group(group) => display_entries(&group.children, tag_option.clone()),
             Node::Entry(entry) => {
                 if let Some(tag) = &tag_option {
                     if entry.tags.contains(&tag) {
