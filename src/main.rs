@@ -13,6 +13,7 @@ use keepass::{
 pub const NAME_TAG_NAME: &str = "Title";
 pub const PHONE_NUMBER_TAG_NAME: &str = "PhoneNumber";
 pub const ADDRESS_TAG_NAME: &str = "Address";
+pub const MATRIX_ID_TAG_NAME: &str = "MatrixID";
 pub const BIRTH_DATE_TAG_NAME: &str = "BirthDate";
 pub const NOTES_TAG_NAME: &str = "Notes";
 
@@ -146,7 +147,8 @@ fn main() -> Result<std::process::ExitCode> {
                     .no_binary_name(true)
                     .arg(arg!(<uuid> "uuid of the contact to edit"))
                     .arg(arg!(b: -b --birthdate <date> "birth date of the contact"))
-                    .arg(arg!(a: -a --address <address> "address of the contact"));
+                    .arg(arg!(a: -a --address <address> "address of the contact"))
+                    .arg(arg!(m: -m --matrix <matrix_id> "matrix id of the contact"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
                 match parsing_result {
                     Ok(command_args) => {
@@ -171,6 +173,15 @@ fn main() -> Result<std::process::ExitCode> {
                             entry.fields.insert(
                                 ADDRESS_TAG_NAME.to_string(),
                                 Value::Unprotected(address.to_string()),
+                            );
+                            was_modified = true;
+                        }
+
+                        if let Some(matrix_id) = command_args.get_one::<String>("m") {
+                            // TODO validate the matrix id format.
+                            entry.fields.insert(
+                                MATRIX_ID_TAG_NAME.to_string(),
+                                Value::Unprotected(matrix_id.to_string()),
                             );
                             was_modified = true;
                         }
@@ -282,6 +293,9 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                     }
                     if let Some(address) = entry.get(ADDRESS_TAG_NAME) {
                         println!("{}: {}", ADDRESS_TAG_NAME, address);
+                    }
+                    if let Some(matrix_id) = entry.get(MATRIX_ID_TAG_NAME) {
+                        println!("{}: {}", MATRIX_ID_TAG_NAME, matrix_id);
                     }
                     if let Some(birth_date) = entry.get(BIRTH_DATE_TAG_NAME) {
                         println!("{}: {}", BIRTH_DATE_TAG_NAME, birth_date);
