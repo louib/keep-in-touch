@@ -10,8 +10,10 @@ use keepass::{
     Database, DatabaseKey,
 };
 
+pub const NAME_TAG_NAME: &str = "Title";
 pub const PHONE_NUMBER_TAG_NAME: &str = "PhoneNumber";
-pub const ADDRESS_TAG_NAME: &str = "PhoneNumber";
+pub const ADDRESS_TAG_NAME: &str = "Address";
+pub const BIRTH_DATE_TAG_NAME: &str = "BirthDate";
 pub const NOTES_TAG_NAME: &str = "Notes";
 
 /// Contact manager based on the KDBX4 encrypted database format
@@ -38,7 +40,7 @@ fn main() -> Result<std::process::ExitCode> {
 
     let database_path = args.path;
 
-    let mut database_file = File::open(database_path)?;
+    let mut database_file = File::open(&database_path)?;
 
     let password = rpassword::prompt_password("Password (or blank for none): ")
         .expect("Could not read password from TTY");
@@ -125,19 +127,70 @@ fn main() -> Result<std::process::ExitCode> {
                         let name = command_args.get_one::<String>("name").unwrap();
                         let mut new_entry = Entry::new();
                         new_entry.fields.insert(
-                            "Title".to_string(),
+                            NAME_TAG_NAME.to_string(),
                             // FIXME should new values be protected by default?
                             Value::Unprotected(name.to_string()),
                         );
                         db.root.children.push(Node::Entry(new_entry));
+                        let mut database_file = File::options().write(true).open(&database_path)?;
                         db.save(&mut database_file, DatabaseKey::with_password(&password))?;
+                        print!("Database was saved.");
                     }
                     Err(e) => {
                         e.print()?;
                     }
                 }
             }
-            "edit" => {}
+            "edit" => {
+                let command = Command::new("")
+                    .no_binary_name(true)
+                    .arg(arg!(<uuid> "uuid of the contact to edit"))
+                    .arg(arg!(b: -b --birthdate <date> "birth date of the contact"))
+                    .arg(arg!(a: -a --address <address> "address of the contact"));
+                let parsing_result = command.clone().try_get_matches_from(command_args);
+                match parsing_result {
+                    Ok(command_args) => {
+                        let uuid = command_args.get_one::<String>("uuid").unwrap();
+                        let entry = get_entry_by_uuid(&mut db.root.children, uuid)
+                            .expect(format!("Could not find entry with uuid {}", uuid).as_ref());
+
+                        let mut was_modified = false;
+                        entry.begin_update().unwrap();
+
+                        if let Some(birth_date) = command_args.get_one::<String>("b") {
+                            // TODO validate the date format.
+                            entry.fields.insert(
+                                BIRTH_DATE_TAG_NAME.to_string(),
+                                Value::Unprotected(birth_date.to_string()),
+                            );
+                            was_modified = true;
+                        }
+
+                        if let Some(address) = command_args.get_one::<String>("a") {
+                            // TODO validate the address format.
+                            entry.fields.insert(
+                                ADDRESS_TAG_NAME.to_string(),
+                                Value::Unprotected(address.to_string()),
+                            );
+                            was_modified = true;
+                        }
+
+                        if was_modified {
+                            println!("The entry was modified. Saving the database.");
+                            entry.commit_update().unwrap();
+                            let mut database_file =
+                                File::options().write(true).open(&database_path)?;
+                            db.save(&mut database_file, DatabaseKey::with_password(&password))?;
+                        } else {
+                            entry.drop_update();
+                            println!("The entry was not modified.");
+                        }
+                    }
+                    Err(e) => {
+                        e.print()?;
+                    }
+                }
+            }
             "help" => {}
             "?" => {
                 print_available_commands();
@@ -153,6 +206,24 @@ fn main() -> Result<std::process::ExitCode> {
     }
 
     Ok(std::process::ExitCode::SUCCESS)
+}
+
+fn get_entry_by_uuid<'a>(nodes: &'a mut Vec<Node>, entry_uuid: &str) -> Option<&'a mut Entry> {
+    for node in nodes {
+        match node {
+            Node::Group(group) => {
+                if let Some(entry) = get_entry_by_uuid(&mut group.children, entry_uuid) {
+                    return Some(entry);
+                }
+            }
+            Node::Entry(entry) => {
+                if entry.uuid.to_string() == entry_uuid {
+                    return Some(entry);
+                }
+            }
+        }
+    }
+    None
 }
 
 fn search_entries(nodes: &Vec<Node>, search_term: &str) {
@@ -199,14 +270,21 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                 }
             }
             Node::Entry(entry) => {
-                if entry.get_uuid() == uuid {
+                if entry.get_uuid().to_string() == uuid {
                     println!("UUID: {}", entry.get_uuid());
-                    println!("Name: {}", entry.get_title().unwrap());
+                    println!(
+                        "Last Modification Time: {}",
+                        entry.times.get_last_modification().unwrap()
+                    );
+                    println!("Name: {}", entry.get(NAME_TAG_NAME).unwrap());
                     if let Some(phone_number) = entry.get(PHONE_NUMBER_TAG_NAME) {
                         println!("{}: {}", PHONE_NUMBER_TAG_NAME, phone_number);
                     }
                     if let Some(address) = entry.get(ADDRESS_TAG_NAME) {
                         println!("{}: {}", ADDRESS_TAG_NAME, address);
+                    }
+                    if let Some(birth_date) = entry.get(BIRTH_DATE_TAG_NAME) {
+                        println!("{}: {}", BIRTH_DATE_TAG_NAME, birth_date);
                     }
                     if !entry.tags.is_empty() {
                         println!("Tags: {}", entry.tags.join(","));
