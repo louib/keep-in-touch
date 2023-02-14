@@ -13,6 +13,7 @@ use keepass::{
 pub const NAME_TAG_NAME: &str = "Title";
 pub const PHONE_NUMBER_TAG_NAME: &str = "PhoneNumber";
 pub const ADDRESS_TAG_NAME: &str = "Address";
+pub const EMAIL_TAG_NAME: &str = "Email";
 pub const MATRIX_ID_TAG_NAME: &str = "MatrixID";
 pub const BIRTH_DATE_TAG_NAME: &str = "BirthDate";
 pub const NOTES_TAG_NAME: &str = "Notes";
@@ -148,7 +149,8 @@ fn main() -> Result<std::process::ExitCode> {
                     .arg(arg!(<uuid> "uuid of the contact to edit"))
                     .arg(arg!(b: -b --birthdate <date> "birth date of the contact"))
                     .arg(arg!(a: -a --address <address> "address of the contact"))
-                    .arg(arg!(m: -m --matrix <matrix_id> "matrix id of the contact"));
+                    .arg(arg!(m: -m --matrix <matrix_id> "matrix id of the contact"))
+                    .arg(arg!(e: -e --email <email> "email address of the contact"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
                 match parsing_result {
                     Ok(command_args) => {
@@ -173,6 +175,16 @@ fn main() -> Result<std::process::ExitCode> {
                             entry.fields.insert(
                                 ADDRESS_TAG_NAME.to_string(),
                                 Value::Unprotected(address.to_string()),
+                            );
+                            was_modified = true;
+                        }
+
+                        // TODO we should support adding multiple email addresses!
+                        if let Some(email) = command_args.get_one::<String>("e") {
+                            // TODO validate the email address format.
+                            entry.fields.insert(
+                                EMAIL_TAG_NAME.to_string(),
+                                Value::Unprotected(email.to_string()),
                             );
                             was_modified = true;
                         }
@@ -293,6 +305,9 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                     }
                     if let Some(address) = entry.get(ADDRESS_TAG_NAME) {
                         println!("{}: {}", ADDRESS_TAG_NAME, address);
+                    }
+                    if let Some(email) = entry.get(EMAIL_TAG_NAME) {
+                        println!("{}: {}", EMAIL_TAG_NAME, email);
                     }
                     if let Some(matrix_id) = entry.get(MATRIX_ID_TAG_NAME) {
                         println!("{}: {}", MATRIX_ID_TAG_NAME, matrix_id);
