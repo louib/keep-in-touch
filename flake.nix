@@ -39,7 +39,7 @@
             };
           };
           packages = {
-            keep-in-touch = pkgs.rustPlatform.buildRustPackage rec {
+            default = pkgs.rustPlatform.buildRustPackage rec {
               pname = projectName;
               version = "main";
 
@@ -50,7 +50,7 @@
               };
 
               meta = with pkgs.lib; {
-                description = "CLI tool to translate from kdbx to vcard, and vice versa";
+                description = "Contact manager based on the KDBX4 encrypted database format";
                 homepage = "https://github.com/louib/${projectName}";
                 license = licenses.gpl3;
                 # maintainers = [];
