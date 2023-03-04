@@ -158,16 +158,12 @@ fn main() -> Result<std::process::ExitCode> {
                         let entry = get_entry_by_uuid(&mut db.root.children, uuid)
                             .expect(format!("Could not find entry with uuid {}", uuid).as_ref());
 
-                        let mut was_modified = false;
-                        entry.begin_update().unwrap();
-
                         if let Some(birth_date) = command_args.get_one::<String>("b") {
                             // TODO validate the date format.
                             entry.fields.insert(
                                 BIRTH_DATE_TAG_NAME.to_string(),
                                 Value::Unprotected(birth_date.to_string()),
                             );
-                            was_modified = true;
                         }
 
                         if let Some(address) = command_args.get_one::<String>("a") {
@@ -176,7 +172,6 @@ fn main() -> Result<std::process::ExitCode> {
                                 ADDRESS_TAG_NAME.to_string(),
                                 Value::Unprotected(address.to_string()),
                             );
-                            was_modified = true;
                         }
 
                         // TODO we should support adding multiple email addresses!
@@ -186,7 +181,6 @@ fn main() -> Result<std::process::ExitCode> {
                                 EMAIL_TAG_NAME.to_string(),
                                 Value::Unprotected(email.to_string()),
                             );
-                            was_modified = true;
                         }
 
                         if let Some(matrix_id) = command_args.get_one::<String>("m") {
@@ -195,17 +189,14 @@ fn main() -> Result<std::process::ExitCode> {
                                 MATRIX_ID_TAG_NAME.to_string(),
                                 Value::Unprotected(matrix_id.to_string()),
                             );
-                            was_modified = true;
                         }
 
-                        if was_modified {
+                        if entry.update_history() {
                             println!("The entry was modified. Saving the database.");
-                            entry.commit_update().unwrap();
                             let mut database_file =
                                 File::options().write(true).open(&database_path)?;
                             db.save(&mut database_file, DatabaseKey::with_password(&password))?;
                         } else {
-                            entry.drop_update();
                             println!("The entry was not modified.");
                         }
                     }
