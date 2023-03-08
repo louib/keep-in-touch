@@ -11,6 +11,7 @@ use keepass::{
 };
 
 pub const NAME_TAG_NAME: &str = "Title";
+pub const NICKNAME_TAG_NAME: &str = "Nickname";
 pub const PHONE_NUMBER_TAG_NAME: &str = "PhoneNumber";
 pub const ADDRESS_TAG_NAME: &str = "Address";
 pub const EMAIL_TAG_NAME: &str = "Email";
@@ -22,7 +23,7 @@ pub const NOTES_TAG_NAME: &str = "Notes";
 #[derive(Parser)]
 #[clap(name = "keep-in-touch")]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
-#[clap(about = "CLI tool to translate from kdbx to vcard, and vice versa.", long_about = None)]
+#[clap(about = "Contact manager based on the KDBX4 encrypted database format", long_about = None)]
 struct KeepInTouch {
     /// The path of the database file.
     path: String,
@@ -150,6 +151,8 @@ fn main() -> Result<std::process::ExitCode> {
                     .arg(arg!(b: -b --birthdate <date> "birth date of the contact"))
                     .arg(arg!(a: -a --address <address> "address of the contact"))
                     .arg(arg!(m: -m --matrix <matrix_id> "matrix id of the contact"))
+                    .arg(arg!(n: -n --nickname <nickname> "nickname of the contact"))
+                    .arg(arg!(p: -p --phone <phone> "phone number of the contact"))
                     .arg(arg!(e: -e --email <email> "email address of the contact"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
                 match parsing_result {
@@ -183,11 +186,27 @@ fn main() -> Result<std::process::ExitCode> {
                             );
                         }
 
+                        // TODO we should support adding multiple phone numbers!
+                        if let Some(phone_number) = command_args.get_one::<String>("p") {
+                            // TODO validate the phone number format.
+                            entry.fields.insert(
+                                PHONE_NUMBER_TAG_NAME.to_string(),
+                                Value::Unprotected(phone_number.to_string()),
+                            );
+                        }
+
                         if let Some(matrix_id) = command_args.get_one::<String>("m") {
                             // TODO validate the matrix id format.
                             entry.fields.insert(
                                 MATRIX_ID_TAG_NAME.to_string(),
                                 Value::Unprotected(matrix_id.to_string()),
+                            );
+                        }
+
+                        if let Some(nickname) = command_args.get_one::<String>("n") {
+                            entry.fields.insert(
+                                NICKNAME_TAG_NAME.to_string(),
+                                Value::Unprotected(nickname.to_string()),
                             );
                         }
 
@@ -252,6 +271,11 @@ fn search_entries(nodes: &Vec<Node>, search_term: &str) {
                         println!("{} {}", entry.get_uuid(), title);
                     }
                 }
+                if let Some(nickname) = entry.get(NICKNAME_TAG_NAME) {
+                    if nickname.contains(search_term) {
+                        println!("{} {}", entry.get_uuid(), nickname);
+                    }
+                }
             }
         }
     }
@@ -291,6 +315,9 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                         entry.times.get_last_modification().unwrap()
                     );
                     println!("Name: {}", entry.get(NAME_TAG_NAME).unwrap());
+                    if let Some(nickname) = entry.get(NICKNAME_TAG_NAME) {
+                        println!("{}: {}", NICKNAME_TAG_NAME, nickname);
+                    }
                     if let Some(phone_number) = entry.get(PHONE_NUMBER_TAG_NAME) {
                         println!("{}: {}", PHONE_NUMBER_TAG_NAME, phone_number);
                     }
