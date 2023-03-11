@@ -1,6 +1,5 @@
 /target
 
-
 # Added by cargo
 #
 # already existing elements were commented out
@@ -12,3 +11,6 @@
 # already existing elements were commented out
 
 #/target
+
+# Default nix output directory
+/result
