@@ -22,4 +22,5 @@ cargo install --path .
 
 ## References
 * https://datatracker.ietf.org/doc/html/rfc6350
+* vCard format definition https://tools.ietf.org/id/draft-ietf-vcarddav-vcardrev-01.html
 * https://en.wikipedia.org/wiki/VCard
