@@ -134,6 +134,7 @@ fn main() -> Result<std::process::ExitCode> {
                             // FIXME should new values be protected by default?
                             Value::Unprotected(name.to_string()),
                         );
+                        new_entry.update_history();
                         db.root.children.push(Node::Entry(new_entry));
                         let mut database_file = File::options().write(true).open(&database_path)?;
                         db.save(&mut database_file, DatabaseKey::with_password(&password))?;
