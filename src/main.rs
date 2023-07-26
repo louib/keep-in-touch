@@ -51,7 +51,10 @@ fn main() -> Result<std::process::ExitCode> {
     // TODO support keyfile
     // TODO support yubikey
     //
-    let mut db = Database::open(&mut database_file, DatabaseKey::with_password(&password))?;
+    let mut db = Database::open(
+        &mut database_file,
+        DatabaseKey::new().with_password(&password),
+    )?;
     println!("Enter '?' to print the list of available commands.");
 
     let stdin = io::stdin();
@@ -137,7 +140,10 @@ fn main() -> Result<std::process::ExitCode> {
                         new_entry.update_history();
                         db.root.children.push(Node::Entry(new_entry));
                         let mut database_file = File::options().write(true).open(&database_path)?;
-                        db.save(&mut database_file, DatabaseKey::with_password(&password))?;
+                        db.save(
+                            &mut database_file,
+                            DatabaseKey::new().with_password(&password),
+                        )?;
                         print!("Database was saved.");
                     }
                     Err(e) => {
@@ -215,7 +221,10 @@ fn main() -> Result<std::process::ExitCode> {
                             println!("The entry was modified. Saving the database.");
                             let mut database_file =
                                 File::options().write(true).open(&database_path)?;
-                            db.save(&mut database_file, DatabaseKey::with_password(&password))?;
+                            db.save(
+                                &mut database_file,
+                                DatabaseKey::new().with_password(&password),
+                            )?;
                         } else {
                             println!("The entry was not modified.");
                         }
