@@ -160,6 +160,7 @@ fn main() -> Result<std::process::ExitCode> {
                     .arg(arg!(m: -m --matrix <matrix_id> "matrix id of the contact"))
                     .arg(arg!(n: -n --nickname <nickname> "nickname of the contact"))
                     .arg(arg!(p: -p --phone <phone> "phone number of the contact"))
+                    .arg(arg!(t: -t --tags <tags> "tags associated with the contact"))
                     .arg(arg!(e: -e --email <email> "email address of the contact"));
                 let parsing_result = command.clone().try_get_matches_from(command_args);
                 match parsing_result {
@@ -215,6 +216,14 @@ fn main() -> Result<std::process::ExitCode> {
                                 NICKNAME_TAG_NAME.to_string(),
                                 Value::Unprotected(nickname.to_string()),
                             );
+                        }
+
+                        if let Some(tags) = command_args.get_one::<String>("t") {
+                            let mut new_tags: Vec<String> = vec![];
+                            for tag in tags.split(",") {
+                                new_tags.push(tag.to_string());
+                            }
+                            entry.tags = new_tags;
                         }
 
                         if entry.update_history() {
