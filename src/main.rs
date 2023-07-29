@@ -155,6 +155,45 @@ fn main() -> Result<std::process::ExitCode> {
                             }
                         }
                     }
+                    "edit-field" => {
+                        let command = Command::new("")
+                            .no_binary_name(true)
+                            .arg(arg!(<uuid> "uuid of the contact to edit"))
+                            .arg(arg!(<name> "name of the field to edit"))
+                            .arg(arg!(<value> "value of the field to edit"));
+                        let parsing_result = command.clone().try_get_matches_from(command_args);
+                        match parsing_result {
+                            Ok(command_args) => {
+                                let uuid = command_args.get_one::<String>("uuid").unwrap();
+                                let entry = get_entry_by_uuid(&mut db.root.children, uuid).expect(
+                                    format!("Could not find entry with uuid {}", uuid).as_ref(),
+                                );
+
+                                let field_name = command_args.get_one::<String>("name").unwrap();
+                                let field_value = command_args.get_one::<String>("value").unwrap();
+
+                                entry.fields.insert(
+                                    field_name.to_string(),
+                                    keepass::db::Value::Unprotected(field_value.to_string()),
+                                );
+
+                                if entry.update_history() {
+                                    println!("The entry was modified. Saving the database.");
+                                    let mut database_file =
+                                        File::options().write(true).open(&database_path)?;
+                                    db.save(
+                                        &mut database_file,
+                                        DatabaseKey::new().with_password(&password),
+                                    )?;
+                                } else {
+                                    println!("The entry was not modified.");
+                                }
+                            }
+                            Err(e) => {
+                                e.print()?;
+                            }
+                        }
+                    }
                     "edit" => {
                         let command = Command::new("")
                             .no_binary_name(true)
@@ -368,24 +407,45 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                         entry.times.get_last_modification().unwrap()
                     );
                     println!("Name: {}", entry.get(NAME_TAG_NAME).unwrap());
+
                     if let Some(nickname) = entry.get(NICKNAME_TAG_NAME) {
                         println!("{}: {}", NICKNAME_TAG_NAME, nickname);
                     }
+
                     if let Some(phone_number) = entry.get(PHONE_NUMBER_TAG_NAME) {
                         println!("{}: {}", PHONE_NUMBER_TAG_NAME, phone_number);
                     }
+                    for field_name in entry.fields.keys() {
+                        if field_name.starts_with(PHONE_NUMBER_TAG_NAME) {
+                            println!(
+                                "{}: {}",
+                                PHONE_NUMBER_TAG_NAME,
+                                entry.get(field_name).unwrap()
+                            );
+                        }
+                    }
+
                     if let Some(address) = entry.get(ADDRESS_TAG_NAME) {
                         println!("{}: {}", ADDRESS_TAG_NAME, address);
                     }
+
                     if let Some(email) = entry.get(EMAIL_TAG_NAME) {
                         println!("{}: {}", EMAIL_TAG_NAME, email);
                     }
+                    for field_name in entry.fields.keys() {
+                        if field_name.starts_with(EMAIL_TAG_NAME) {
+                            println!("{}: {}", EMAIL_TAG_NAME, entry.get(field_name).unwrap());
+                        }
+                    }
+
                     if let Some(matrix_id) = entry.get(MATRIX_ID_TAG_NAME) {
                         println!("{}: {}", MATRIX_ID_TAG_NAME, matrix_id);
                     }
+
                     if let Some(birth_date) = entry.get(BIRTH_DATE_TAG_NAME) {
                         println!("{}: {}", BIRTH_DATE_TAG_NAME, birth_date);
                     }
+
                     if !entry.tags.is_empty() {
                         println!("Tags: {}", entry.tags.join(","));
                     }
@@ -408,6 +468,7 @@ fn print_available_commands() {
     println!("add - Add a new contact");
     println!("show - Show a contact's information");
     println!("edit - Edit a contact");
+    println!("edit-field - Edit a custom field on a contact");
     println!("help - Display the help for a command");
     println!("? - Print the list of available commands");
     println!("exit - Exit the application");
