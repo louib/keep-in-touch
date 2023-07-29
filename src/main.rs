@@ -71,7 +71,6 @@ fn main() -> Result<std::process::ExitCode> {
         let readline = readline_editor.readline("> ");
         match readline {
             Ok(line) => {
-                println!("Line: {}", line);
                 let args = shellwords::split(&line)?;
 
                 if args.is_empty() {
