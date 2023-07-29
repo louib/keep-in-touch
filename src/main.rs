@@ -301,20 +301,35 @@ fn search_entries(nodes: &Vec<Node>, search_term: &str) {
 }
 
 fn display_entries(nodes: &Vec<Node>, tag_option: Option<String>) {
+    let mut matching_entries = get_matching_entries(nodes, tag_option);
+    matching_entries.sort_by(|e1, e2| e1.get_title().unwrap().cmp(e2.get_title().unwrap()));
+    for entry in matching_entries {
+        println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+    }
+}
+
+fn get_matching_entries(nodes: &Vec<Node>, tag_option: Option<String>) -> Vec<Entry> {
+    let mut matching_entries: Vec<Entry> = vec![];
     for node in nodes {
         match node {
-            Node::Group(group) => display_entries(&group.children, tag_option.clone()),
+            Node::Group(group) => {
+                matching_entries.extend(get_matching_entries(&group.children, tag_option.clone()));
+            }
             Node::Entry(entry) => {
+                if entry.get_title().is_none() {
+                    continue;
+                }
                 if let Some(tag) = &tag_option {
                     if entry.tags.contains(&tag) {
-                        println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+                        matching_entries.push(entry.clone());
                     }
                 } else {
-                    println!("{} {}", entry.get_uuid(), entry.get_title().unwrap());
+                    matching_entries.push(entry.clone());
                 }
             }
         }
     }
+    matching_entries
 }
 
 fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
