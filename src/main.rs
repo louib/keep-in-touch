@@ -415,13 +415,12 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                     if let Some(phone_number) = entry.get(PHONE_NUMBER_TAG_NAME) {
                         println!("{}: {}", PHONE_NUMBER_TAG_NAME, phone_number);
                     }
+                    // Handle multi fields
                     for field_name in entry.fields.keys() {
-                        if field_name.starts_with(PHONE_NUMBER_TAG_NAME) {
-                            println!(
-                                "{}: {}",
-                                PHONE_NUMBER_TAG_NAME,
-                                entry.get(field_name).unwrap()
-                            );
+                        if field_name.starts_with(PHONE_NUMBER_TAG_NAME)
+                            && field_name != PHONE_NUMBER_TAG_NAME
+                        {
+                            println!("{}: {}", field_name, entry.get(field_name).unwrap());
                         }
                     }
 
@@ -432,9 +431,10 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                     if let Some(email) = entry.get(EMAIL_TAG_NAME) {
                         println!("{}: {}", EMAIL_TAG_NAME, email);
                     }
+                    // Handle multi fields
                     for field_name in entry.fields.keys() {
-                        if field_name.starts_with(EMAIL_TAG_NAME) {
-                            println!("{}: {}", EMAIL_TAG_NAME, entry.get(field_name).unwrap());
+                        if field_name.starts_with(EMAIL_TAG_NAME) && field_name != EMAIL_TAG_NAME {
+                            println!("{}: {}", field_name, entry.get(field_name).unwrap());
                         }
                     }
 
