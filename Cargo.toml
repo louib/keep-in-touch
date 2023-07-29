@@ -20,10 +20,11 @@ keywords = [
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 anyhow = { version = "1" }
-shellwords = "1.1.0"
+shellwords = { version = "1.1.0", default-features = false }
 
-ical = "0.8"
-rpassword = { version = "7" }
+rpassword = { version = "7" , default-features = false }
+
+rustyline = { version = "12.0.0", default-features = false }
 
 [dependencies.keepass]
 git = "https://github.com/sseemayer/keepass-rs"

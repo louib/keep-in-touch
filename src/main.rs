@@ -1,14 +1,13 @@
 use std::fs::File;
-use std::io;
-use std::io::Write;
 
 use anyhow::Result;
-
 use clap::{arg, Command, Parser};
 use keepass::{
     db::{Entry, Node, Value},
     Database, DatabaseKey,
 };
+use rustyline::config::EditMode;
+use rustyline::error::ReadlineError;
 
 pub const NAME_TAG_NAME: &str = "Title";
 pub const NICKNAME_TAG_NAME: &str = "Nickname";
@@ -57,204 +56,224 @@ fn main() -> Result<std::process::ExitCode> {
     )?;
     println!("Enter '?' to print the list of available commands.");
 
-    let stdin = io::stdin();
+    let config = rustyline::config::Builder::new()
+        .max_history_size(1000)
+        .unwrap()
+        .edit_mode(EditMode::Vi)
+        .build();
+    let mut readline_editor = rustyline::Editor::<(), _>::with_history(
+        config,
+        rustyline::history::MemHistory::with_config(config),
+    )
+    .unwrap();
 
     loop {
-        let mut buffer = String::new();
+        let readline = readline_editor.readline("> ");
+        match readline {
+            Ok(line) => {
+                println!("Line: {}", line);
+                let args = shellwords::split(&line)?;
 
-        print!("> ");
-        io::stdout().flush()?;
-        stdin.read_line(&mut buffer)?;
-
-        let line: String = buffer.replace(&"\n", &"");
-        let line: &str = line.trim().as_ref();
-
-        let args = shellwords::split(line)?;
-
-        if args.is_empty() {
-            continue;
-        }
-
-        let command_name = &args[0];
-        let command_args = &args[1..];
-
-        match command_name.as_ref() {
-            "ls" => {
-                let command = Command::new("")
-                    .no_binary_name(true)
-                    .arg(arg!(t: -t --tag <TAG> "list entries with a specific tag"));
-                let parsing_result = command.clone().try_get_matches_from(command_args);
-                match parsing_result {
-                    Ok(command_args) => {
-                        display_entries(
-                            &db.root.children,
-                            command_args.get_one::<String>("t").cloned(),
-                        );
-                    }
-                    Err(e) => {
-                        e.print()?;
-                    }
+                if args.is_empty() {
+                    continue;
                 }
-            }
-            "show" => {
-                if command_args.len() != 1 {
-                    println!("Invalid number of arguments.")
-                }
-                let entry_uuid = command_args[0].clone();
-                let found = show_entry(&db.root.children, &entry_uuid);
-                if !found {
-                    println!("Could not find entry {}", entry_uuid);
-                }
-            }
-            "search" => {
-                let command = Command::new("")
-                    .no_binary_name(true)
-                    .arg(arg!(<term> "term to search for"));
-                let parsing_result = command.clone().try_get_matches_from(command_args);
-                match parsing_result {
-                    Ok(command_args) => {
-                        search_entries(
-                            &db.root.children,
-                            command_args.get_one::<String>("term").unwrap(),
-                        );
-                    }
-                    Err(e) => {
-                        e.print()?;
-                    }
-                }
-            }
-            "add" => {
-                let command = Command::new("")
-                    .no_binary_name(true)
-                    .arg(arg!(<name> "name of the new contact"));
-                let parsing_result = command.clone().try_get_matches_from(command_args);
-                match parsing_result {
-                    Ok(command_args) => {
-                        let name = command_args.get_one::<String>("name").unwrap();
-                        let mut new_entry = Entry::new();
-                        new_entry.fields.insert(
-                            NAME_TAG_NAME.to_string(),
-                            // FIXME should new values be protected by default?
-                            Value::Unprotected(name.to_string()),
-                        );
-                        new_entry.update_history();
-                        db.root.children.push(Node::Entry(new_entry));
-                        let mut database_file = File::options().write(true).open(&database_path)?;
-                        db.save(
-                            &mut database_file,
-                            DatabaseKey::new().with_password(&password),
-                        )?;
-                        print!("Database was saved.");
-                    }
-                    Err(e) => {
-                        e.print()?;
-                    }
-                }
-            }
-            "edit" => {
-                let command = Command::new("")
-                    .no_binary_name(true)
-                    .arg(arg!(<uuid> "uuid of the contact to edit"))
-                    .arg(arg!(b: -b --birthdate <date> "birth date of the contact"))
-                    .arg(arg!(a: -a --address <address> "address of the contact"))
-                    .arg(arg!(m: -m --matrix <matrix_id> "matrix id of the contact"))
-                    .arg(arg!(n: -n --nickname <nickname> "nickname of the contact"))
-                    .arg(arg!(p: -p --phone <phone> "phone number of the contact"))
-                    .arg(arg!(t: -t --tags <tags> "tags associated with the contact"))
-                    .arg(arg!(e: -e --email <email> "email address of the contact"));
-                let parsing_result = command.clone().try_get_matches_from(command_args);
-                match parsing_result {
-                    Ok(command_args) => {
-                        let uuid = command_args.get_one::<String>("uuid").unwrap();
-                        let entry = get_entry_by_uuid(&mut db.root.children, uuid)
-                            .expect(format!("Could not find entry with uuid {}", uuid).as_ref());
 
-                        if let Some(birth_date) = command_args.get_one::<String>("b") {
-                            // TODO validate the date format.
-                            entry.fields.insert(
-                                BIRTH_DATE_TAG_NAME.to_string(),
-                                Value::Unprotected(birth_date.to_string()),
-                            );
-                        }
+                let command_name = &args[0];
+                let command_args = &args[1..];
 
-                        if let Some(address) = command_args.get_one::<String>("a") {
-                            // TODO validate the address format.
-                            entry.fields.insert(
-                                ADDRESS_TAG_NAME.to_string(),
-                                Value::Unprotected(address.to_string()),
-                            );
-                        }
-
-                        // TODO we should support adding multiple email addresses!
-                        if let Some(email) = command_args.get_one::<String>("e") {
-                            // TODO validate the email address format.
-                            entry.fields.insert(
-                                EMAIL_TAG_NAME.to_string(),
-                                Value::Unprotected(email.to_string()),
-                            );
-                        }
-
-                        // TODO we should support adding multiple phone numbers!
-                        if let Some(phone_number) = command_args.get_one::<String>("p") {
-                            // TODO validate the phone number format.
-                            entry.fields.insert(
-                                PHONE_NUMBER_TAG_NAME.to_string(),
-                                Value::Unprotected(phone_number.to_string()),
-                            );
-                        }
-
-                        if let Some(matrix_id) = command_args.get_one::<String>("m") {
-                            // TODO validate the matrix id format.
-                            entry.fields.insert(
-                                MATRIX_ID_TAG_NAME.to_string(),
-                                Value::Unprotected(matrix_id.to_string()),
-                            );
-                        }
-
-                        if let Some(nickname) = command_args.get_one::<String>("n") {
-                            entry.fields.insert(
-                                NICKNAME_TAG_NAME.to_string(),
-                                Value::Unprotected(nickname.to_string()),
-                            );
-                        }
-
-                        if let Some(tags) = command_args.get_one::<String>("t") {
-                            let mut new_tags: Vec<String> = vec![];
-                            for tag in tags.split(",") {
-                                new_tags.push(tag.to_string());
+                match command_name.as_ref() {
+                    "ls" => {
+                        let command = Command::new("")
+                            .no_binary_name(true)
+                            .arg(arg!(t: -t --tag <TAG> "list entries with a specific tag"));
+                        let parsing_result = command.clone().try_get_matches_from(command_args);
+                        match parsing_result {
+                            Ok(command_args) => {
+                                display_entries(
+                                    &db.root.children,
+                                    command_args.get_one::<String>("t").cloned(),
+                                );
                             }
-                            entry.tags = new_tags;
-                        }
-
-                        if entry.update_history() {
-                            println!("The entry was modified. Saving the database.");
-                            let mut database_file =
-                                File::options().write(true).open(&database_path)?;
-                            db.save(
-                                &mut database_file,
-                                DatabaseKey::new().with_password(&password),
-                            )?;
-                        } else {
-                            println!("The entry was not modified.");
+                            Err(e) => {
+                                e.print()?;
+                            }
                         }
                     }
-                    Err(e) => {
-                        e.print()?;
+                    "show" => {
+                        if command_args.len() != 1 {
+                            println!("Invalid number of arguments.")
+                        }
+                        let entry_uuid = command_args[0].clone();
+                        let found = show_entry(&db.root.children, &entry_uuid);
+                        if !found {
+                            println!("Could not find entry {}", entry_uuid);
+                        }
+                    }
+                    "search" => {
+                        let command = Command::new("")
+                            .no_binary_name(true)
+                            .arg(arg!(<term> "term to search for"));
+                        let parsing_result = command.clone().try_get_matches_from(command_args);
+                        match parsing_result {
+                            Ok(command_args) => {
+                                search_entries(
+                                    &db.root.children,
+                                    command_args.get_one::<String>("term").unwrap(),
+                                );
+                            }
+                            Err(e) => {
+                                e.print()?;
+                            }
+                        }
+                    }
+                    "add" => {
+                        let command = Command::new("")
+                            .no_binary_name(true)
+                            .arg(arg!(<name> "name of the new contact"));
+                        let parsing_result = command.clone().try_get_matches_from(command_args);
+                        match parsing_result {
+                            Ok(command_args) => {
+                                let name = command_args.get_one::<String>("name").unwrap();
+                                let mut new_entry = Entry::new();
+                                new_entry.fields.insert(
+                                    NAME_TAG_NAME.to_string(),
+                                    // FIXME should new values be protected by default?
+                                    Value::Unprotected(name.to_string()),
+                                );
+                                new_entry.update_history();
+                                db.root.children.push(Node::Entry(new_entry));
+                                let mut database_file =
+                                    File::options().write(true).open(&database_path)?;
+                                db.save(
+                                    &mut database_file,
+                                    DatabaseKey::new().with_password(&password),
+                                )?;
+                                print!("Database was saved.");
+                            }
+                            Err(e) => {
+                                e.print()?;
+                            }
+                        }
+                    }
+                    "edit" => {
+                        let command = Command::new("")
+                            .no_binary_name(true)
+                            .arg(arg!(<uuid> "uuid of the contact to edit"))
+                            .arg(arg!(b: -b --birthdate <date> "birth date of the contact"))
+                            .arg(arg!(a: -a --address <address> "address of the contact"))
+                            .arg(arg!(m: -m --matrix <matrix_id> "matrix id of the contact"))
+                            .arg(arg!(n: -n --nickname <nickname> "nickname of the contact"))
+                            .arg(arg!(p: -p --phone <phone> "phone number of the contact"))
+                            .arg(arg!(t: -t --tags <tags> "tags associated with the contact"))
+                            .arg(arg!(e: -e --email <email> "email address of the contact"));
+                        let parsing_result = command.clone().try_get_matches_from(command_args);
+                        match parsing_result {
+                            Ok(command_args) => {
+                                let uuid = command_args.get_one::<String>("uuid").unwrap();
+                                let entry = get_entry_by_uuid(&mut db.root.children, uuid).expect(
+                                    format!("Could not find entry with uuid {}", uuid).as_ref(),
+                                );
+
+                                if let Some(birth_date) = command_args.get_one::<String>("b") {
+                                    // TODO validate the date format.
+                                    entry.fields.insert(
+                                        BIRTH_DATE_TAG_NAME.to_string(),
+                                        Value::Unprotected(birth_date.to_string()),
+                                    );
+                                }
+
+                                if let Some(address) = command_args.get_one::<String>("a") {
+                                    // TODO validate the address format.
+                                    entry.fields.insert(
+                                        ADDRESS_TAG_NAME.to_string(),
+                                        Value::Unprotected(address.to_string()),
+                                    );
+                                }
+
+                                // TODO we should support adding multiple email addresses!
+                                if let Some(email) = command_args.get_one::<String>("e") {
+                                    // TODO validate the email address format.
+                                    entry.fields.insert(
+                                        EMAIL_TAG_NAME.to_string(),
+                                        Value::Unprotected(email.to_string()),
+                                    );
+                                }
+
+                                // TODO we should support adding multiple phone numbers!
+                                if let Some(phone_number) = command_args.get_one::<String>("p") {
+                                    // TODO validate the phone number format.
+                                    entry.fields.insert(
+                                        PHONE_NUMBER_TAG_NAME.to_string(),
+                                        Value::Unprotected(phone_number.to_string()),
+                                    );
+                                }
+
+                                if let Some(matrix_id) = command_args.get_one::<String>("m") {
+                                    // TODO validate the matrix id format.
+                                    entry.fields.insert(
+                                        MATRIX_ID_TAG_NAME.to_string(),
+                                        Value::Unprotected(matrix_id.to_string()),
+                                    );
+                                }
+
+                                if let Some(nickname) = command_args.get_one::<String>("n") {
+                                    entry.fields.insert(
+                                        NICKNAME_TAG_NAME.to_string(),
+                                        Value::Unprotected(nickname.to_string()),
+                                    );
+                                }
+
+                                if let Some(tags) = command_args.get_one::<String>("t") {
+                                    let mut new_tags: Vec<String> = vec![];
+                                    for tag in tags.split(",") {
+                                        new_tags.push(tag.to_string());
+                                    }
+                                    entry.tags = new_tags;
+                                }
+
+                                if entry.update_history() {
+                                    println!("The entry was modified. Saving the database.");
+                                    let mut database_file =
+                                        File::options().write(true).open(&database_path)?;
+                                    db.save(
+                                        &mut database_file,
+                                        DatabaseKey::new().with_password(&password),
+                                    )?;
+                                } else {
+                                    println!("The entry was not modified.");
+                                }
+                            }
+                            Err(e) => {
+                                e.print()?;
+                            }
+                        }
+                    }
+                    "help" => {}
+                    "?" => {
+                        print_available_commands();
+                    }
+                    "exit" => {
+                        break;
+                    }
+                    _ => {
+                        println!("Invalid command {}", command_name);
                     }
                 }
+                readline_editor.add_history_entry(line.as_str())?;
             }
-            "help" => {}
-            "?" => {
-                print_available_commands();
-            }
-            "exit" => {
+            Err(ReadlineError::Interrupted) => {
+                println!("CTRL-C");
                 break;
             }
-            _ => {
-                println!("Invalid command {}", command_name);
+            Err(ReadlineError::Eof) => {
+                println!("CTRL-D");
+                break;
+            }
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break;
             }
         }
-        println!();
     }
 
     Ok(std::process::ExitCode::SUCCESS)
