@@ -26,6 +26,7 @@ pub const NOTES_TAG_NAME: &str = "Notes";
 struct KeepInTouch {
     /// The path of the database file.
     path: String,
+
     /// Disables the password prompt on stdout.
     #[clap(long, short)]
     no_prompt: bool,
@@ -44,8 +45,19 @@ fn main() -> Result<std::process::ExitCode> {
 
     let mut database_file = File::open(&database_path)?;
 
-    let password = rpassword::prompt_password("Password (or blank for none): ")
-        .expect("Could not read password from TTY");
+    let mut password: Option<String> = None;
+    if args.no_prompt {
+        let mut buffer = String::new();
+        let stdin = std::io::stdin();
+        stdin.read_line(&mut buffer)?;
+        password = Some(buffer);
+    } else {
+        password = Some(
+            rpassword::prompt_password("Password (or blank for none): ")
+                .expect("Could not read password from TTY"),
+        );
+    }
+    let password = password.unwrap();
 
     // TODO support keyfile
     // TODO support yubikey
