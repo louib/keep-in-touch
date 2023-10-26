@@ -1,17 +1,17 @@
 [package]
-name = "keep-in-touch"
+name = "keep-notes"
 authors = ["louib <code@louib.net>"]
 
 version = "0.1.0"
 edition = "2021"
 # rust-version = "1.60"
 
-repository = "https://github.com/louib/keep-in-touch/"
-description = "Contact manager based on the KDBX4 encrypted database format"
+repository = "https://github.com/louib/keep-notes/"
+description = "Note-taking CLI application based on the KDBX4 encrypted database format."
 
 keywords = [
   "keepass",
-  "vcard",
+  "notes",
   "cli",
 ]
 

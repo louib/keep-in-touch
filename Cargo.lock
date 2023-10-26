@@ -509,7 +509,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "keep-in-touch"
+name = "keep-notes"
 version = "0.1.0"
 dependencies = [
  "anyhow",

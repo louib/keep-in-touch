@@ -1,26 +1,21 @@
-# keep-in-touch
-[![dependency status](https://deps.rs/repo/github/louib/keep-in-touch/status.svg)](https://deps.rs/repo/github/louib/keep-in-touch)
-[![License file](https://img.shields.io/github/license/louib/keep-in-touch)](https://github.com/louib/keep-in-touch/blob/master/LICENSE)
+# keep-notes
+[![dependency status](https://deps.rs/repo/github/louib/keep-notes/status.svg)](https://deps.rs/repo/github/louib/keep-notes)
+[![License file](https://img.shields.io/github/license/louib/keep-notes)](https://github.com/louib/keep-notes/blob/master/LICENSE)
 
-Contact manager based on the KDBX4 encrypted database format.
+Note-taking CLI application based on the KDBX4 encrypted database format.
 
-`keep-in-touch` is still in active development. There currently is only a repl-like CLI, but
-my plan is to add a TUI in the future. See [this issue](https://github.com/louib/keep-in-touch/issues/1#issuecomment-1418337633) for the reasoning behind the project.
+`keep-notes` is still in active development. There currently is only a repl-like CLI, but
+my plan is to add a TUI in the future.
 
 ## Installing
 
 ### With Nix
 Assuming that you have enabled both the `flakes` and `nix-command` experimental features:
 ```
-nix profile install github:louib/keep-in-touch
+nix profile install github:louib/keep-notes
 ```
 
 ### With Cargo
 ```
 cargo install --path .
 ```
-
-## References
-* https://datatracker.ietf.org/doc/html/rfc6350
-* vCard format definition https://tools.ietf.org/id/draft-ietf-vcarddav-vcardrev-01.html
-* https://en.wikipedia.org/wiki/VCard

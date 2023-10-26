@@ -18,7 +18,7 @@
     flake-utils.lib.eachDefaultSystem (
       system: (
         let
-          projectName = "keep-in-touch";
+          projectName = "keep-notes";
           pkgs = import nixpkgs {
             inherit system;
           };

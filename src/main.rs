@@ -20,9 +20,9 @@ pub const NOTES_TAG_NAME: &str = "Notes";
 
 /// Contact manager based on the KDBX4 encrypted database format
 #[derive(Parser)]
-#[clap(name = "keep-in-touch")]
+#[clap(name = "keep-notes")]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
-#[clap(about = "Contact manager based on the KDBX4 encrypted database format", long_about = None)]
+#[clap(about = "Note-taking CLI application based on the KDBX4 encrypted database format", long_about = None)]
 struct KeepInTouch {
     /// The path of the database file.
     path: String,
