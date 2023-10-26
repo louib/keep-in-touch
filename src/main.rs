@@ -1,4 +1,6 @@
 use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::process::Stdio;
 
 use anyhow::Result;
 use clap::{arg, Command, Parser};
@@ -160,6 +162,50 @@ fn main() -> Result<std::process::ExitCode> {
                                     DatabaseKey::new().with_password(&password),
                                 )?;
                                 print!("Database was saved.");
+                            }
+                            Err(e) => {
+                                e.print()?;
+                            }
+                        }
+                    }
+                    "edit-notes" => {
+                        let command = Command::new("")
+                            .no_binary_name(true)
+                            .arg(arg!(<uuid> "uuid of the contact to edit"));
+                        let parsing_result = command.clone().try_get_matches_from(command_args);
+                        match parsing_result {
+                            Ok(command_args) => {
+                                let uuid = command_args.get_one::<String>("uuid").unwrap();
+                                let entry = get_entry_by_uuid(&mut db.root.children, uuid).expect(
+                                    format!("Could not find entry with uuid {}", uuid).as_ref(),
+                                );
+
+                                let notes = match entry.fields.get("Notes") {
+                                    Some(n) => n.clone(),
+                                    None => Value::Unprotected("".to_string()),
+                                };
+                                let notes = match notes {
+                                    Value::Unprotected(u) => u,
+                                    _ => continue,
+                                };
+                                let edited_notes =
+                                    edit_notes(entry.get_title().unwrap(), &notes).unwrap();
+
+                                entry
+                                    .fields
+                                    .insert("Notes".to_string(), Value::Unprotected(edited_notes));
+
+                                if entry.update_history() {
+                                    println!("The entry was modified. Saving the database.");
+                                    let mut database_file =
+                                        File::options().write(true).open(&database_path)?;
+                                    db.save(
+                                        &mut database_file,
+                                        DatabaseKey::new().with_password(&password),
+                                    )?;
+                                } else {
+                                    println!("The entry was not modified.");
+                                }
                             }
                             Err(e) => {
                                 e.print()?;
@@ -463,7 +509,7 @@ fn show_entry(nodes: &Vec<Node>, uuid: &str) -> bool {
                     if let Some(notes) = entry.get(NOTES_TAG_NAME) {
                         println!("--- {} ---", NOTES_TAG_NAME);
                         println!("{}", notes);
-                        println!("----------");
+                        println!("-------------");
                     }
                     return true;
                 }
@@ -480,7 +526,55 @@ fn print_available_commands() {
     println!("show - Show a contact's information");
     println!("edit - Edit a contact");
     println!("edit-field - Edit a custom field on a contact");
+    println!("edit-notes - Edit the notes of a contact");
     println!("help - Display the help for a command");
     println!("? - Print the list of available commands");
     println!("exit - Exit the application");
+}
+
+pub fn edit_notes(entry_title: &str, notes: &str) -> Result<String, String> {
+    let mut child_process = std::process::Command::new("yad")
+        .arg(format!("--title=editing notes for `{}`", entry_title))
+        .arg("--center")
+        .arg("--borders=20")
+        .arg("--width=500")
+        .arg("--height=300")
+        .arg("--separator=\n")
+        .arg("--form")
+        .arg("--field=Notes:TXT")
+        .arg("--button=Cancel:1")
+        .arg("--button=Save:0")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    if let Some(ref form_input) = &mut child_process.stdin {
+        let mut writer = BufWriter::new(form_input);
+        for line in notes.split("\n") {
+            writer.write(line.as_bytes()).map_err(|e| e.to_string())?;
+            writer.write(b"\\n").map_err(|e| e.to_string())?;
+        }
+        writer.flush().map_err(|e| e.to_string())?;
+    }
+
+    let output = child_process
+        .wait_with_output()
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        return Err(format!("Could not edit notes for {}: {}", entry_title, &stderr).into());
+    }
+
+    let mut response = "".to_string();
+    for line in String::from_utf8(output.stdout)
+        .map_err(|e| e.to_string())?
+        .split("\\n")
+    {
+        response += line;
+        response += "\n";
+    }
+
+    Ok(response)
 }
