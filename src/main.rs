@@ -148,6 +148,7 @@ fn main() -> Result<std::process::ExitCode> {
                             Ok(command_args) => {
                                 let name = command_args.get_one::<String>("name").unwrap();
                                 let mut new_entry = Entry::new();
+                                let new_entry_uuid = new_entry.uuid.to_string();
                                 new_entry.fields.insert(
                                     NAME_TAG_NAME.to_string(),
                                     // FIXME should new values be protected by default?
@@ -161,7 +162,7 @@ fn main() -> Result<std::process::ExitCode> {
                                     &mut database_file,
                                     DatabaseKey::new().with_password(&password),
                                 )?;
-                                print!("Database was saved.");
+                                print!("Entry {} was added to the database.", new_entry_uuid);
                             }
                             Err(e) => {
                                 e.print()?;
