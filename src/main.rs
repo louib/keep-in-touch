@@ -577,5 +577,5 @@ pub fn edit_notes(entry_title: &str, notes: &str) -> Result<String, String> {
         response += "\n";
     }
 
-    Ok(response)
+    Ok(response.trim_end().to_string())
 }
