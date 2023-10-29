@@ -162,7 +162,7 @@ fn main() -> Result<std::process::ExitCode> {
                                     &mut database_file,
                                     DatabaseKey::new().with_password(&password),
                                 )?;
-                                print!("Entry {} was added to the database.", new_entry_uuid);
+                                println!("Entry {} was added to the database.", new_entry_uuid);
                             }
                             Err(e) => {
                                 e.print()?;
