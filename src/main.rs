@@ -5,7 +5,7 @@ use std::process::Stdio;
 use anyhow::Result;
 use clap::{arg, Command, Parser};
 use keepass::{
-    db::{Entry, Node, Value},
+    db::{Entry, Group, Node, Value},
     Database, DatabaseKey,
 };
 use rustyline::config::EditMode;
@@ -163,6 +163,19 @@ fn main() -> Result<std::process::ExitCode> {
                                     DatabaseKey::new().with_password(&password),
                                 )?;
                                 println!("Entry {} was added to the database.", new_entry_uuid);
+                            }
+                            Err(e) => {
+                                e.print()?;
+                            }
+                        }
+                    }
+                    "export-vcard" => {
+                        let command = Command::new("").no_binary_name(true);
+                        let parsing_result = command.clone().try_get_matches_from(command_args);
+                        match parsing_result {
+                            Ok(command_args) => {
+                                let vcard_dump = dump_group_to_vcard(&db.root);
+                                println!("{}", vcard_dump);
                             }
                             Err(e) => {
                                 e.print()?;
@@ -526,6 +539,7 @@ fn print_available_commands() {
     println!("add - Add a new contact");
     println!("show - Show a contact's information");
     println!("edit - Edit a contact");
+    println!("export-vcard - Export the database to vcard v4 format");
     println!("edit-field - Edit a custom field on a contact");
     println!("edit-notes - Edit the notes of a contact");
     println!("help - Display the help for a command");
@@ -578,4 +592,62 @@ pub fn edit_notes(entry_title: &str, notes: &str) -> Result<String, String> {
     }
 
     Ok(response.trim_end().to_string())
+}
+
+pub fn dump_group_to_vcard(group: &Group) -> String {
+    let mut response = "".to_string();
+    for node in &group.children {
+        match node {
+            Node::Entry(e) => response += &dump_entry_to_vcard(&e).unwrap_or("".to_string()),
+            Node::Group(g) => response += &dump_group_to_vcard(&g),
+        };
+    }
+    response
+}
+
+pub fn dump_entry_to_vcard(entry: &Entry) -> Option<String> {
+    let title = match entry.get_title() {
+        Some(t) => t,
+        None => return None,
+    };
+
+    let mut response = "".to_string();
+    response += "BEGIN:VCARD\n";
+    response += "VERSION:4.0\n";
+
+    response += "UID:urn:uuid:";
+    response += &entry.uuid.to_string();
+    response += "\n";
+
+    response += "FN:";
+    response += title;
+    response += "\n";
+
+    if let Some(phone) = entry.fields.get(PHONE_NUMBER_TAG_NAME) {
+        if let Value::Unprotected(phone_value) = phone {
+            response += "TEL:";
+            response += phone_value;
+            response += "\n";
+        } else {
+            return None;
+        }
+    } else {
+        // We don't wait to dump those without a phone number for the moment.
+        return None;
+    }
+
+    if let Some(email) = entry.fields.get(EMAIL_TAG_NAME) {
+        if let Value::Unprotected(email_value) = email {
+            // TODO handle multiple emails.
+            response += "EMAIL:";
+            response += email_value;
+            response += "\n";
+        }
+    }
+
+    response += "END:VCARD";
+    response += "\n";
+    response += "\n";
+
+    Some(response)
 }
