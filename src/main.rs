@@ -203,7 +203,13 @@ fn main() -> Result<std::process::ExitCode> {
                                     _ => continue,
                                 };
                                 let edited_notes =
-                                    edit_notes(entry.get_title().unwrap(), &notes).unwrap();
+                                    match edit_notes(entry.get_title().unwrap(), &notes) {
+                                        Ok(n) => n,
+                                        Err(e) => {
+                                            eprintln!("{}", &e);
+                                            continue;
+                                        }
+                                    };
 
                                 entry
                                     .fields
