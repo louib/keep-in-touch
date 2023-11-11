@@ -170,12 +170,19 @@ fn main() -> Result<std::process::ExitCode> {
                         }
                     }
                     "export-vcard" => {
-                        let command = Command::new("").no_binary_name(true);
+                        let command = Command::new("")
+                            .no_binary_name(true)
+                            .arg(arg!(<out> "path of the file to export to"));
                         let parsing_result = command.clone().try_get_matches_from(command_args);
                         match parsing_result {
                             Ok(command_args) => {
                                 let vcard_dump = dump_group_to_vcard(&db.root);
-                                println!("{}", vcard_dump);
+
+                                let out_path = command_args.get_one::<String>("out").unwrap();
+
+                                let mut out_file = File::options().write(true).open(&out_path)?;
+                                out_file.write_all(vcard_dump.as_bytes())?;
+                                println!("The contacts were exported to {}", out_path);
                             }
                             Err(e) => {
                                 e.print()?;
