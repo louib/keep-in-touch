@@ -20,15 +20,16 @@ keywords = [
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 anyhow = { version = "1" }
-shellwords = { version = "1.1.0", default-features = false }
+shellwords = { version = "1", default-features = false }
 
 rpassword = { version = "7" , default-features = false }
 
-rustyline = { version = "12.0.0", default-features = false }
+rustyline = { version = "12", default-features = false }
 
 [dependencies.keepass]
-git = "https://github.com/sseemayer/keepass-rs"
+version = "0.7"
+# git = "https://github.com/sseemayer/keepass-rs"
 # Using my merge branch until the fixes to the update_history function are merged.
 # branch = "add_merge_feature"
 # path = "../keepass-rs"
-features = ["save_kdbx4"]
+features = ["save_kdbx4", "challenge_response"]
