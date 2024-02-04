@@ -1,10 +1,10 @@
 ---
-name: CI on Master
+name: CI on Main
 
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
