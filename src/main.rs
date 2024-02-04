@@ -6,7 +6,7 @@ use anyhow::Result;
 use clap::{arg, Command, Parser};
 use keepass::{
     db::{Entry, Group, Node, Value},
-    Database, DatabaseKey,
+    ChallengeResponseKey, Database, DatabaseKey,
 };
 use rustyline::config::EditMode;
 use rustyline::error::ReadlineError;
@@ -32,6 +32,13 @@ struct KeepInTouch {
     /// Disables the password prompt on stdout.
     #[clap(long, short)]
     no_prompt: bool,
+
+    /// The slot number of the yubikey used to encrypt the database
+    slot: Option<String>,
+
+    /// The serial number of the yubikey used to encrypt the database
+    #[arg(short = 'n', long)]
+    serial_number: Option<u32>,
 }
 
 fn main() -> Result<std::process::ExitCode> {
@@ -54,9 +61,14 @@ fn main() -> Result<std::process::ExitCode> {
         database_key = database_key.with_password(&password);
     }
 
+    if let Some(slot) = args.slot {
+        let yubikey = ChallengeResponseKey::get_yubikey(args.serial_number)?;
+        database_key = database_key
+            .with_challenge_response_key(ChallengeResponseKey::YubikeyChallenge(yubikey, slot));
+    }
+
     // TODO support keyfile
-    // TODO support yubikey
-    //
+
     let mut db = Database::open(&mut database_file, database_key.clone())?;
     println!("Enter '?' to print the list of available commands.");
 
