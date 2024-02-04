@@ -24,7 +24,7 @@ shellwords = { version = "1", default-features = false }
 
 rpassword = { version = "7" , default-features = false }
 
-rustyline = { version = "12", default-features = false }
+rustyline = { version = "13", default-features = false }
 
 [dependencies.keepass]
 version = "0.7"
