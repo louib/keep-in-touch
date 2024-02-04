@@ -34,12 +34,6 @@ struct KeepInTouch {
     no_prompt: bool,
 }
 
-#[derive(Parser, Default)]
-struct Show {
-    /// The UUID of the entry to show
-    uuid: String,
-}
-
 fn main() -> Result<std::process::ExitCode> {
     let args = KeepInTouch::parse();
 
