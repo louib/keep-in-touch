@@ -41,27 +41,23 @@ fn main() -> Result<std::process::ExitCode> {
 
     let mut database_file = File::open(&database_path)?;
 
-    let mut password: Option<String> = None;
+    let mut database_key = DatabaseKey::new();
+
     if args.no_prompt {
-        let mut buffer = String::new();
+        let mut password = String::new();
         let stdin = std::io::stdin();
-        stdin.read_line(&mut buffer)?;
-        password = Some(buffer);
+        stdin.read_line(&mut password)?;
+        database_key = database_key.with_password(&password);
     } else {
-        password = Some(
-            rpassword::prompt_password("Password (or blank for none): ")
-                .expect("Could not read password from TTY"),
-        );
+        let password =
+            rpassword::prompt_password("Password: ").expect("Could not read password from TTY");
+        database_key = database_key.with_password(&password);
     }
-    let password = password.unwrap();
 
     // TODO support keyfile
     // TODO support yubikey
     //
-    let mut db = Database::open(
-        &mut database_file,
-        DatabaseKey::new().with_password(&password),
-    )?;
+    let mut db = Database::open(&mut database_file, database_key.clone())?;
     println!("Enter '?' to print the list of available commands.");
 
     let config = rustyline::config::Builder::new()
@@ -152,10 +148,7 @@ fn main() -> Result<std::process::ExitCode> {
                                 db.root.children.push(Node::Entry(new_entry));
                                 let mut database_file =
                                     File::options().write(true).open(&database_path)?;
-                                db.save(
-                                    &mut database_file,
-                                    DatabaseKey::new().with_password(&password),
-                                )?;
+                                db.save(&mut database_file, database_key.clone())?;
                                 println!("Entry {} was added to the database.", new_entry_uuid);
                             }
                             Err(e) => {
@@ -220,10 +213,7 @@ fn main() -> Result<std::process::ExitCode> {
                                     println!("The entry was modified. Saving the database.");
                                     let mut database_file =
                                         File::options().write(true).open(&database_path)?;
-                                    db.save(
-                                        &mut database_file,
-                                        DatabaseKey::new().with_password(&password),
-                                    )?;
+                                    db.save(&mut database_file, database_key.clone())?;
                                 } else {
                                     println!("The entry was not modified.");
                                 }
@@ -259,10 +249,7 @@ fn main() -> Result<std::process::ExitCode> {
                                     println!("The entry was modified. Saving the database.");
                                     let mut database_file =
                                         File::options().write(true).open(&database_path)?;
-                                    db.save(
-                                        &mut database_file,
-                                        DatabaseKey::new().with_password(&password),
-                                    )?;
+                                    db.save(&mut database_file, database_key.clone())?;
                                 } else {
                                     println!("The entry was not modified.");
                                 }
@@ -352,10 +339,7 @@ fn main() -> Result<std::process::ExitCode> {
                                     println!("The entry was modified. Saving the database.");
                                     let mut database_file =
                                         File::options().write(true).open(&database_path)?;
-                                    db.save(
-                                        &mut database_file,
-                                        DatabaseKey::new().with_password(&password),
-                                    )?;
+                                    db.save(&mut database_file, database_key.clone())?;
                                 } else {
                                     println!("The entry was not modified.");
                                 }
