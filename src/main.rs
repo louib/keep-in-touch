@@ -411,19 +411,20 @@ fn get_entry_by_uuid<'a>(nodes: &'a mut Vec<Node>, entry_uuid: &str) -> Option<&
 }
 
 fn search_entries(nodes: &Vec<Node>, search_term: &str) {
+    let search_term = search_term.to_lowercase();
     for node in nodes {
         match node {
             Node::Group(group) => {
-                search_entries(&group.children, search_term);
+                search_entries(&group.children, &search_term);
             }
             Node::Entry(entry) => {
                 if let Some(title) = entry.get_title() {
-                    if title.contains(search_term) {
+                    if title.to_lowercase().contains(&search_term) {
                         println!("{} {}", entry.get_uuid(), title);
                     }
                 }
                 if let Some(nickname) = entry.get(NICKNAME_TAG_NAME) {
-                    if nickname.contains(search_term) {
+                    if nickname.to_lowercase().contains(&search_term) {
                         println!("{} {}", entry.get_uuid(), nickname);
                     }
                 }

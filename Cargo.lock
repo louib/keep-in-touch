@@ -209,9 +209,9 @@ dependencies = [
 
 [[package]]
 name = "challenge_response"
-version = "0.2.1"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0af4716f75d43bc01c3e265155575c73bf152c2a71e4115554d26559b22ba81c"
+checksum = "3bdab40161e583713229445ea01f9d57f1f02906707caf2858548add9f367f5f"
 dependencies = [
  "aes",
  "bitflags",
