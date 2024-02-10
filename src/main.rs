@@ -179,7 +179,8 @@ fn main() -> Result<std::process::ExitCode> {
 
                                 let out_path = command_args.get_one::<String>("out").unwrap();
 
-                                let mut out_file = File::options().write(true).open(&out_path)?;
+                                let mut out_file =
+                                    File::options().create(true).write(true).open(&out_path)?;
                                 out_file.write_all(vcard_dump.as_bytes())?;
                                 println!("The contacts were exported to {}", out_path);
                             }
