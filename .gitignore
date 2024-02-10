@@ -14,3 +14,5 @@
 
 # Default nix output directory
 /result
+
+*.vcf
