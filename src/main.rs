@@ -30,10 +30,11 @@ struct KeepInTouch {
     path: String,
 
     /// Disables the password prompt on stdout.
-    #[clap(long, short)]
+    #[clap(long)]
     no_prompt: bool,
 
     /// The slot number of the yubikey used to encrypt the database
+    #[arg(short = 's', long)]
     slot: Option<String>,
 
     /// The serial number of the yubikey used to encrypt the database
