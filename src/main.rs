@@ -420,6 +420,10 @@ fn search_entries(nodes: &Vec<Node>, search_term: &str) {
                 search_entries(&group.children, &search_term);
             }
             Node::Entry(entry) => {
+                let entry_title = match entry.get_title() {
+                    Some(t) => t.clone().to_string(),
+                    None => entry.uuid.to_string(),
+                };
                 if let Some(title) = entry.get_title() {
                     if title.to_lowercase().contains(&search_term) {
                         println!("{} {}", entry.get_uuid(), title);
@@ -427,7 +431,12 @@ fn search_entries(nodes: &Vec<Node>, search_term: &str) {
                 }
                 if let Some(nickname) = entry.get(NICKNAME_TAG_NAME) {
                     if nickname.to_lowercase().contains(&search_term) {
-                        println!("{} {}", entry.get_uuid(), nickname);
+                        println!("{} {} {}", entry_title, entry.get_uuid(), nickname);
+                    }
+                }
+                if let Some(phone_number) = entry.get(PHONE_NUMBER_TAG_NAME) {
+                    if phone_number.contains(&search_term) {
+                        println!("{} {} {}", entry_title, entry.get_uuid(), phone_number);
                     }
                 }
             }
